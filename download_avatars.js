@@ -20,13 +20,31 @@ function getRepoContributors(repoOwner, repoName, callback) {
   request(getRequestOptions(repoOwner, repoName), function (error, response, body) {
     try {
       const data = JSON.parse(body);
-      console.log(data);
+      data.forEach((contributor) => {
+    console.log(contributor.avatar_url);
+      })
+      console.log(newData);    
     } catch (err) {
       console.log('Failed to parse content body');
     }
   });
 }
 
+
+// function downloadImageByUrl(url, filePath){
+//     request.get('url')
+
+//       .on('error', function (err) {
+//          throw err;
+//        })
+
+//       .on('response', function (response) {
+//          console.log('Response Status Code:\n',response.statusCode, response.headers['content-type']);
+//        })
+
+//       .pipe(fs.createWriteStream(filePath));
+//       console.log("Download complete...")
+// }
 // function getRepoContributors(repoOwner, repoName, callback){
 
     
