@@ -1,56 +1,59 @@
 var request = require('request');
-
-console.log('Welcome to the Github Avatar Downloader!');
-
-var GITHUB_USER = process.env.GITHUB_USER;
-var GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 var request = require('request');
 var fs = require('fs');
 
+console.log('Welcome to the Github Avatar Downloader!');
+
 function getRequestOptions(repoOwner, repoName) {
   return {
-    url: 'https://'+ GITHUB_USER + ':' + GITHUB_TOKEN + '@api.github.com/repos/' + repoOwner + '/' + repoName + '/contributors',
+    url: 'https://api.github.com/repos/' + repoOwner +'/' + repoName+ '/contributors',
     headers: {
       'User-Agent': 'kittenfingers'
     },
+      qs: {
+      access_token: process.env.GITHUB_ACCESS
+    }
   };
-}
+};
 
 function getRepoContributors(repoOwner, repoName, callback) {
-    request(getRequestOptions(repoOwner, repoName), function (error, response, body) {
+  console.log(`Requesting github users for ${repoOwner}/${repoName}`)
+  request(getRequestOptions(repoOwner, repoName), function (error, response, body) {
     try {
       const data = JSON.parse(body);
-      data.forEach((contributor) => {
-      console.log(contributor.avatar_url) ;
-        })  
-        } catch (err) {
-        console.log('Failed to parse content body');
-        }
-    });
+      callback(data);
+    } catch (err) {
+      console.log(err, 'Failed to parse content body');
+    }
+  });
+};
+
+function downloadImageByUrl(url, filePath) {
+  request.head(url, function(err, res, body) {
+    let extension = '';
+    let contentType = res.headers['content-type'];
+
+    if (contentType === 'image/jpeg') {
+      extension = '.jpg';
+    } else if (contentType === 'image/png') {
+      extension = '.png'
+    } else {
+      console.log('Unknown content type', url, contentType);
+    }
+    
+    request.get(url).pipe(fs.createWriteStream(filePath + extension));{
+      console.log("Download complete")
+    }
+  });
 }
 
-// function downloadImageByUrl(url, filePath) {
-    
-// request.get(url)
-
-//         .on('error', function (err) {
-//             throw err;
-//         })
-
-//         .on('response', function (response) {
-//             console.log('Response Status Code:\n',response.statusCode,response.statusMessage, response.headers['content-type']);
-//         })
-
-//         .pipe(fs.createWriteStream(filePath));
-//         console.log("Download complete...")
-//     }
-
-// downloadImageByUrl("https://avatars2.githubusercontent.com/u/2741?v=3&s=466", "./kvirani.jpg")
-
-getRepoContributors("jquery", "jquery", function(err, result) {
-    console.log("Errors:", err);
-    console.log("Result:", result);
-});
-
-
-
+if (process.argv.length < 4) {
+  console.log('Proper usage:')
+  console.log("Error, please input correct information!", `${process.argv[1]} repoOwner repoName`);
+} else {
+  getRepoContributors(process.argv[2], process.argv[3], (data) => {
+    data.forEach((contributor) => {
+      downloadImageByUrl(contributor.avatar_url,'avatars/' + contributor.login);
+    });
+  });
+}
